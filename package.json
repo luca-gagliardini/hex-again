@@ -1,0 +1,20 @@
+{
+  "name": "hex_game_again",
+  "version": "1.0.0",
+  "description": "Hex-based game engine with Pixi.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "vite": "^7.1.12"
+  },
+  "dependencies": {
+    "pixi.js": "^8.14.0"
+  }
+}
