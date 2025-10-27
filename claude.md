@@ -11,6 +11,61 @@ We're building a flexible, performant hex-based game engine for browser-first de
 5. **Modular Architecture**: Game rules separate from engine, enabling rapid gameplay experimentation
 6. **Always help the user test the implementation steps**
 
+## Development Workflow (CI/CD)
+
+### IMPORTANT: Always Follow This Workflow for New Features
+
+When implementing new features, ALWAYS follow this workflow:
+
+**1. Create Feature Branch**
+```bash
+git checkout -b feature/feature-name
+# or
+git checkout -b fix/bug-name
+```
+
+**2. Implement & Test Locally**
+- Make incremental commits as you develop
+- Test thoroughly with `npm run dev`
+- Commit often with descriptive messages
+
+**3. Deploy PR Preview for Review**
+- Push feature branch: `git push -u origin feature/feature-name`
+- Create Pull Request on GitHub
+- GitHub Actions will automatically:
+  - Build the project
+  - Deploy preview to: `https://luca-gagliardini.github.io/hex-again/pr-preview/pr-{number}/`
+  - Post comment on PR with preview URL
+- Share preview URL with team for testing
+- Make additional commits if needed (preview auto-updates)
+
+**4. Squash Commits Before Merge**
+Once feature is approved and ready to merge:
+```bash
+# Squash all feature commits into one clean commit
+git reset --soft main
+git commit -m "Descriptive summary of complete feature"
+git push --force
+```
+
+**5. Merge to Main**
+- Merge the PR on GitHub (or locally with `git merge --ff-only`)
+- Preview deployment auto-cleans up
+- Production deploys automatically to `https://luca-gagliardini.github.io/hex-again/`
+
+### Git History Rules
+- ✅ **Linear history only** - use rebase, not merge commits
+- ✅ **One commit per feature** on main - squash before merging
+- ✅ **Concise commit messages** - one-liner describing what was done
+- ❌ **No merge commits** on main branch
+- ❌ **No work-in-progress commits** on main
+
+### PR Preview URLs
+- Production: `https://luca-gagliardini.github.io/hex-again/`
+- PR Previews: `https://luca-gagliardini.github.io/hex-again/pr-preview/pr-{number}/`
+- Previews auto-deploy on PR creation/update
+- Previews auto-cleanup on PR close/merge
+
 ## Technical Stack
 - **Rendering**: Pixi.js (WebGL with Canvas fallback)
   - ALWAYS consult: https://pixijs.download/release/docs/index.html

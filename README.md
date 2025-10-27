@@ -2,6 +2,76 @@
 
 A performant, flexible hex-based game engine built with Pixi.js for browser-first deployment.
 
+## 🚀 Deployment & CI/CD
+
+This project uses GitHub Actions for automatic deployment:
+
+**Production:**
+- URL: https://luca-gagliardini.github.io/hex-again/
+- Deploys automatically on push to `main`
+
+**PR Preview Deployments:**
+- Each PR gets its own preview URL: `https://luca-gagliardini.github.io/hex-again/pr-preview/pr-{number}/`
+- Auto-updates on new commits to the PR
+- Auto-cleanup when PR is closed/merged
+- Bot comments on PR with preview link
+
+### Development Workflow
+
+**1. Create a feature branch:**
+```bash
+git checkout -b feature/your-feature-name
+# Make your changes
+git add .
+git commit -m "Add your feature"
+git push -u origin feature/your-feature-name
+```
+
+**2. Open a Pull Request:**
+- Go to GitHub and create a PR from your feature branch
+- GitHub Actions will automatically build and deploy a preview
+- Share the preview URL with your team for testing
+
+**3. Update your PR:**
+```bash
+# Make more changes
+git add .
+git commit -m "Update feature"
+git push
+# Preview automatically updates!
+```
+
+**4. Merge (maintaining linear history):**
+```bash
+# Option A: Merge via GitHub UI (automatically uses fast-forward when possible)
+# Click "Merge pull request" on GitHub
+
+# Option B: Merge locally with rebase
+git checkout main
+git pull
+git merge --ff-only feature/your-feature-name
+git push
+```
+
+**Git History Policy:**
+- ✅ Use **rebase** for a linear history (no merge commits)
+- ✅ Squash related commits before merging
+- ✅ Keep commit messages concise and descriptive
+- ❌ No merge commits on main branch
+
+### Squashing Commits
+
+If you have multiple commits for one feature:
+```bash
+# Interactive rebase to squash commits
+git rebase -i HEAD~3  # Squash last 3 commits
+
+# Or reset and recommit
+git reset --soft HEAD~3
+git commit -m "Complete feature implementation"
+git push --force
+```
+
 ## Phase 1: Foundation with Monitoring ✓
 
 ### Completed Features
