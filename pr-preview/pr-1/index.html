@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/hex-again/pr-preview/pr-1/favicon.svg">
+  <title>Hex Game Engine</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      font-family: 'Courier New', monospace;
+      background: #1a1a1a;
+    }
+
+    #game-container {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    #stats {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1000;
+    }
+
+    /* Dev Panel */
+    #dev-panel {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(76, 175, 80, 0.3);
+      border-radius: 5px;
+      font-family: 'Courier New', monospace;
+      max-width: 400px;
+      transition: all 0.3s ease;
+    }
+
+    #dev-panel.collapsed {
+      width: 40px;
+      height: 40px;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 10px;
+      background: rgba(76, 175, 80, 0.2);
+      border-bottom: 1px solid rgba(76, 175, 80, 0.3);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-header h3 {
+      margin: 0;
+      font-size: 14px;
+      color: #4CAF50;
+    }
+
+    .panel-content {
+      padding: 10px;
+      display: none;
+    }
+
+    #dev-panel:not(.collapsed) .panel-content {
+      display: block;
+    }
+
+    .dev-section {
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(136, 136, 136, 0.2);
+    }
+
+    .dev-section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .dev-section h4 {
+      margin: 0 0 8px 0;
+      font-size: 12px;
+      color: #888;
+      text-transform: uppercase;
+    }
+
+    button {
+      background: #4CAF50;
+      border: none;
+      color: white;
+      padding: 6px 12px;
+      text-align: center;
+      display: inline-block;
+      font-size: 11px;
+      margin: 2px;
+      cursor: pointer;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #45a049;
+    }
+
+    button.secondary {
+      background: #2196F3;
+    }
+
+    button.secondary:hover {
+      background: #1976D2;
+    }
+
+    button.danger {
+      background: #f44336;
+    }
+
+    button.danger:hover {
+      background: #da190b;
+    }
+
+    button.active {
+      background: #FF9800;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .file-label {
+      background: #2196F3;
+      border: none;
+      color: white;
+      padding: 6px 12px;
+      text-align: center;
+      display: inline-block;
+      font-size: 11px;
+      margin: 2px;
+      cursor: pointer;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      transition: background 0.2s;
+    }
+
+    .file-label:hover {
+      background: #1976D2;
+    }
+
+    textarea {
+      width: 100%;
+      height: 200px;
+      background: #000;
+      color: #00FF00;
+      border: 1px solid #4CAF50;
+      padding: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 10px;
+      border-radius: 3px;
+      resize: vertical;
+    }
+
+    .state-viewer {
+      display: none;
+    }
+
+    .state-viewer.active {
+      display: block;
+    }
+
+    .perf-test {
+      display: none;
+    }
+
+    .perf-test.active {
+      display: block;
+    }
+
+    .test-results {
+      max-height: 200px;
+      overflow-y: auto;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 8px;
+      border-radius: 3px;
+      margin-top: 8px;
+    }
+
+    .test-result {
+      font-size: 10px;
+      margin: 4px 0;
+      padding: 4px;
+      border-left: 3px solid #4CAF50;
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .test-result.pass { border-color: #00FF00; color: #00FF00; }
+    .test-result.warn { border-color: #FFFF00; color: #FFFF00; }
+    .test-result.fail { border-color: #FF0000; color: #FF0000; }
+    .test-result.info { border-color: #888; color: #888; }
+
+    .help-text {
+      color: #666;
+      font-size: 9px;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(136, 136, 136, 0.2);
+    }
+
+    .toggle-icon {
+      font-size: 18px;
+      transition: transform 0.3s;
+    }
+
+    #dev-panel.collapsed .toggle-icon {
+      transform: rotate(180deg);
+    }
+  </style>
+  <script type="module" crossorigin src="/hex-again/pr-preview/pr-1/assets/index-DSg1aAxK.js"></script>
+</head>
+<body>
+  <div id="game-container">
+    <div id="stats"></div>
+
+    <!-- Consolidated Dev Panel -->
+    <div id="dev-panel" class="collapsed">
+      <div class="panel-header" onclick="toggleDevPanel()">
+        <h3>DEV</h3>
+        <span class="toggle-icon">▼</span>
+      </div>
+
+      <div class="panel-content">
+        <!-- Debug Controls -->
+        <div class="dev-section">
+          <h4>Debug Overlay</h4>
+          <button id="toggle-debug" onclick="toggleDebug()">Toggle (F1)</button>
+          <button id="toggle-detail" onclick="toggleDetail()">Detailed (D)</button>
+        </div>
+
+        <!-- State Management -->
+        <div class="dev-section">
+          <h4>State Management</h4>
+          <button onclick="exportState()">Export</button>
+          <label for="import-state" class="file-label">Import</label>
+          <input type="file" id="import-state" accept=".json">
+          <button class="secondary" id="toggle-state-viewer" onclick="toggleStateViewer()">View State</button>
+
+          <div class="state-viewer" id="state-viewer">
+            <textarea id="state-json" placeholder="State JSON will appear here..."></textarea>
+            <button onclick="captureState()">Capture</button>
+            <button class="secondary" onclick="loadStateFromTextarea()">Load from Editor</button>
+            <button class="danger" onclick="clearState()">Clear</button>
+          </div>
+        </div>
+
+        <!-- Performance Testing -->
+        <div class="dev-section">
+          <h4>Performance Test</h4>
+          <button class="secondary" id="toggle-perf-test" onclick="togglePerfTest()">Toggle Test Panel</button>
+
+          <div class="perf-test" id="perf-test">
+            <button onclick="runPerfTest(100)">100 Hexes</button>
+            <button onclick="runPerfTest(500)">500 Hexes</button>
+            <button onclick="runPerfTest(1000)">1000 Hexes</button>
+            <button class="danger" onclick="clearPerfResults()">Clear</button>
+            <div class="test-results" id="perf-results"></div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="dev-section">
+          <h4>Quick Actions</h4>
+          <button onclick="resetViewport()">Reset View (R)</button>
+          <button class="secondary" onclick="printPerf()">Print Perf (P)</button>
+        </div>
+
+        <div class="help-text">
+          F1: Debug • D: Detail • R: Reset • E: Export<br>
+          F2: Dev Panel • Drag: Pan • Scroll: Zoom
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
