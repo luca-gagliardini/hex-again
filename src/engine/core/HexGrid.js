@@ -11,26 +11,55 @@ export class HexGrid {
     this.width = config.width || 20; // Grid width in hexes
     this.height = config.height || 20; // Grid height in hexes
 
-    // Hex layout constants (flat-top orientation)
+    // Hex layout constants (pointy-top orientation for horizontal rectangle)
     this.layout = {
       orientation: {
-        f0: 3/2, f1: 0,
-        f2: Math.sqrt(3)/2, f3: Math.sqrt(3),
-        b0: 2/3, b1: 0,
-        b2: -1/3, b3: Math.sqrt(3)/3,
-        startAngle: 0
+        f0: Math.sqrt(3), f1: Math.sqrt(3)/2,
+        f2: 0, f3: 3/2,
+        b0: Math.sqrt(3)/3, b1: -1/3,
+        b2: 0, b3: 2/3,
+        startAngle: 0.5
       },
       size: this.size,
       origin: { x: 0, y: 0 }
     };
 
-    // Terrain types
+    // Terrain types with fill and stroke colors for better visual distinction
+    // TODO(phase 4): Extract terrain config to data-driven TerrainRegistry system
+    // TODO(phase 4): Make units, terrain, and UI config-driven for rapid design iteration
+    // TODO(phase 4): Add pattern/texture/sprite support for terrain types
+    // TODO(phase 4): Support multiple visual themes (units and terrain)
     this.terrainTypes = {
-      GRASS: { color: 0x4CAF50, name: 'grass', cost: 1 },
-      WATER: { color: 0x2196F3, name: 'water', cost: 2 },
-      MOUNTAIN: { color: 0x9E9E9E, name: 'mountain', cost: 3 },
-      DESERT: { color: 0xFFEB3B, name: 'desert', cost: 1 },
-      FOREST: { color: 0x1B5E20, name: 'forest', cost: 2 }
+      GRASS: {
+        color: 0x5CB85C,      // Bright grass green
+        stroke: 0x2E7D32,     // Dark green border
+        name: 'grass',
+        cost: 1
+      },
+      WATER: {
+        color: 0x42A5F5,      // Bright blue
+        stroke: 0x1565C0,     // Deep blue border
+        name: 'water',
+        cost: 2
+      },
+      MOUNTAIN: {
+        color: 0xBDBDBD,      // Light gray
+        stroke: 0x424242,     // Dark gray border
+        name: 'mountain',
+        cost: 3
+      },
+      DESERT: {
+        color: 0xFFD54F,      // Sandy yellow
+        stroke: 0xF57C00,     // Orange border
+        name: 'desert',
+        cost: 1
+      },
+      FOREST: {
+        color: 0x2E7D32,      // Dark forest green
+        stroke: 0x1B5E20,     // Darker green border
+        name: 'forest',
+        cost: 2
+      }
     };
 
     // Store hex data
@@ -42,12 +71,21 @@ export class HexGrid {
 
   /**
    * Initialize grid with hexes
+   * Uses offset coordinates (col, row) to create a rectangular grid shape
+   * Converts to axial coordinates (q, r) for internal storage
+   * Using pointy-top hexagons with offset layout for horizontal rectangle alignment
    */
   initializeGrid() {
     const terrainKeys = Object.keys(this.terrainTypes);
 
-    for (let q = 0; q < this.width; q++) {
-      for (let r = 0; r < this.height; r++) {
+    // Iterate in rectangular fashion: columns (left-right), rows (top-bottom)
+    for (let col = 0; col < this.width; col++) {
+      for (let row = 0; row < this.height; row++) {
+        // Convert offset coordinates to axial for pointy-top hexagons
+        // With this formula, q increases left-to-right, r increases top-to-bottom
+        const q = col - Math.floor(row / 2);
+        const r = row;
+
         const hex = new Hex(q, r);
         // Random terrain for now
         const terrainKey = terrainKeys[Math.floor(Math.random() * terrainKeys.length)];
@@ -113,6 +151,7 @@ export class HexGrid {
   /**
    * Render all hexes to the container
    * Performance: Uses Graphics for better batching
+   * TODO(phase 5): Group hexes by terrain type for batch rendering on large maps (>1000 hexes)
    */
   render() {
     // Clear existing graphics
@@ -125,23 +164,15 @@ export class HexGrid {
       const { hex, terrain } = data;
       const corners = this.getHexCorners(hex);
 
-      // Draw filled hex
-      graphics.fill({ color: terrain.color, alpha: 0.8 });
+      // Draw filled hex with terrain-specific color
+      graphics.beginPath();
       graphics.moveTo(corners[0].x, corners[0].y);
-
       for (let i = 1; i < corners.length; i++) {
         graphics.lineTo(corners[i].x, corners[i].y);
       }
       graphics.closePath();
-
-      // Draw outline
-      graphics.stroke({ width: 1, color: 0x000000, alpha: 0.3 });
-      graphics.moveTo(corners[0].x, corners[0].y);
-
-      for (let i = 1; i < corners.length; i++) {
-        graphics.lineTo(corners[i].x, corners[i].y);
-      }
-      graphics.closePath();
+      graphics.fill({ color: terrain.color, alpha: 0.85 });
+      graphics.stroke({ width: 2, color: terrain.stroke, alpha: 0.9 });
     });
 
     this.container.addChild(graphics);

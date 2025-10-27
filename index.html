@@ -226,11 +226,61 @@
     #dev-panel.collapsed .toggle-icon {
       transform: rotate(180deg);
     }
+
+    /* Game Tooltip */
+    #game-tooltip {
+      position: fixed;
+      z-index: 10001; /* Above everything */
+      display: none;
+      pointer-events: none; /* Don't block mouse events */
+      background: rgba(0, 0, 0, 0.95);
+      border: 1px solid rgba(76, 175, 80, 0.5);
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      color: #00FF00;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+      max-width: 300px;
+    }
+
+    #game-tooltip .tooltip-section {
+      margin: 0;
+    }
+
+    #game-tooltip .tooltip-title {
+      font-size: 12px;
+      font-weight: bold;
+      color: #4CAF50;
+      margin-bottom: 6px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid rgba(76, 175, 80, 0.3);
+    }
+
+    #game-tooltip .tooltip-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 3px 0;
+      line-height: 1.4;
+    }
+
+    #game-tooltip .tooltip-label {
+      color: #888;
+      margin-right: 12px;
+    }
+
+    #game-tooltip .tooltip-value {
+      color: #00FF00;
+      text-align: right;
+    }
   </style>
 </head>
 <body>
   <div id="game-container">
     <div id="stats"></div>
+
+    <!-- Game Tooltip (follows cursor) -->
+    <div id="game-tooltip"></div>
 
     <!-- Consolidated Dev Panel -->
     <div id="dev-panel" class="collapsed">
