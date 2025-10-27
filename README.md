@@ -2,6 +2,10 @@
 
 A performant, flexible hex-based game engine built with Pixi.js for browser-first deployment.
 
+## 🚀 CI/CD with PR Previews
+
+This project includes automatic PR preview deployments! Each pull request gets its own preview URL for testing changes before merging.
+
 ## Phase 1: Foundation with Monitoring ✓
 
 ### Completed Features
