@@ -5,6 +5,7 @@ import { DebugOverlay } from '../../debug/DebugOverlay.js';
 import { EntityManager } from './EntityManager.js';
 import { RenderSystem } from '../systems/RenderSystem.js';
 import { PositionComponent, RenderableComponent } from './Components.js';
+import { TooltipManager, DebugHexFormatter } from '../../ui/TooltipManager.js';
 
 /**
  * HexEngine - Main game engine class
@@ -33,6 +34,7 @@ export class HexEngine {
     this.debugOverlay = null;
     this.entityManager = new EntityManager();
     this.renderSystem = null; // Initialized after hexGrid
+    this.tooltipManager = new TooltipManager();
 
     // Performance tracking
     this.debugInfo = {
@@ -100,6 +102,11 @@ export class HexEngine {
       this.debugOverlay = new DebugOverlay(this.app);
       this.app.stage.addChild(this.debugOverlay.container);
 
+      // Initialize tooltip manager
+      this.tooltipManager.initialize();
+      // TODO(phase 3): Make formatter swappable based on game mode (debug vs gameplay)
+      this.tooltipManager.setFormatter(new DebugHexFormatter());
+
       // Update debug info
       this.debugInfo.totalHexes = this.hexGrid.getHexCount();
 
@@ -153,6 +160,33 @@ export class HexEngine {
         this.viewportPos.x = e.clientX - this.dragStart.x;
         this.viewportPos.y = e.clientY - this.dragStart.y;
         this.updateViewportTransform();
+        // Hide tooltip while dragging
+        this.tooltipManager.hide();
+      } else {
+        // Update tooltip (when debug overlay is visible)
+        // TODO(phase 3): Decouple tooltip visibility from debug overlay for game-mode tooltips
+        if (this.debugOverlay && this.debugOverlay.visible) {
+          const rect = canvas.getBoundingClientRect();
+          const canvasX = e.clientX - rect.left;
+          const canvasY = e.clientY - rect.top;
+
+          // Convert to world coordinates
+          const worldX = (canvasX - this.viewportPos.x) / this.scale;
+          const worldY = (canvasY - this.viewportPos.y) / this.scale;
+
+          // Get hex at position
+          const hex = this.hexGrid.pixelToHex(worldX, worldY);
+          const hexData = this.hexGrid.getHex(hex.q, hex.r);
+
+          if (hexData) {
+            // Show tooltip with hex data at cursor position
+            this.tooltipManager.show(hexData, e.clientX, e.clientY);
+          } else {
+            this.tooltipManager.hide();
+          }
+        } else {
+          this.tooltipManager.hide();
+        }
       }
     });
 
