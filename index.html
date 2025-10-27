@@ -263,6 +263,20 @@
           </div>
         </div>
 
+        <!-- Unit Spawner (Phase 2) -->
+        <div class="dev-section">
+          <h4>Unit Spawner</h4>
+          <button onclick="spawnUnit('circle', 0xFF0000)">🔴 Red</button>
+          <button onclick="spawnUnit('circle', 0x00FF00)">🟢 Green</button>
+          <button onclick="spawnUnit('circle', 0x0000FF)">🔵 Blue</button>
+          <button onclick="spawnUnit('square', 0xFFFF00)">🟨 Yellow</button>
+          <button onclick="spawnUnit('triangle', 0xFF00FF)">🔺 Purple</button>
+          <button class="danger" onclick="clearAllUnits()">Clear All</button>
+          <div style="margin-top: 8px; color: #888; font-size: 10px;">
+            Click hex after clicking a color
+          </div>
+        </div>
+
         <!-- Performance Testing -->
         <div class="dev-section">
           <h4>Performance Test</h4>

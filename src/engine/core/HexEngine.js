@@ -2,6 +2,9 @@ import * as PIXI from 'pixi.js';
 import { HexGrid } from './HexGrid.js';
 import { StateManager } from './StateManager.js';
 import { DebugOverlay } from '../../debug/DebugOverlay.js';
+import { EntityManager } from './EntityManager.js';
+import { RenderSystem } from '../systems/RenderSystem.js';
+import { PositionComponent, RenderableComponent } from './Components.js';
 
 /**
  * HexEngine - Main game engine class
@@ -28,6 +31,8 @@ export class HexEngine {
     this.hexGrid = null;
     this.stateManager = new StateManager();
     this.debugOverlay = null;
+    this.entityManager = new EntityManager();
+    this.renderSystem = null; // Initialized after hexGrid
 
     // Performance tracking
     this.debugInfo = {
@@ -86,6 +91,10 @@ export class HexEngine {
 
       this.hexGrid.render();
       this.viewport.addChild(this.hexGrid.container);
+
+      // Initialize render system
+      this.renderSystem = new RenderSystem(this.entityManager, this.hexGrid);
+      this.viewport.addChild(this.renderSystem.container);
 
       // Initialize debug overlay
       this.debugOverlay = new DebugOverlay(this.app);
@@ -158,6 +167,27 @@ export class HexEngine {
     });
 
     canvas.style.cursor = 'grab';
+
+    // Hex click handler (for unit placement)
+    canvas.addEventListener('click', (e) => {
+      if (!this.isDragging && this.onHexClick) {
+        const rect = canvas.getBoundingClientRect();
+        const canvasX = e.clientX - rect.left;
+        const canvasY = e.clientY - rect.top;
+
+        // Convert to world coordinates
+        const worldX = (canvasX - this.viewportPos.x) / this.scale;
+        const worldY = (canvasY - this.viewportPos.y) / this.scale;
+
+        // Get hex at position
+        const hex = this.hexGrid.pixelToHex(worldX, worldY);
+        const hexData = this.hexGrid.getHex(hex.q, hex.r);
+
+        if (hexData) {
+          this.onHexClick(hex);
+        }
+      }
+    });
 
     // Touch support for mobile
     let lastTouchDistance = 0;
@@ -234,12 +264,32 @@ export class HexEngine {
 
     const startTime = performance.now();
 
-    // Update debug overlay
+    // Performance profiling: RenderSystem
+    const renderStart = performance.now();
+    this.renderSystem.update();
+    const renderTime = performance.now() - renderStart;
+
+    // Update debug info
     this.debugInfo.visibleHexes = this.hexGrid.getHexCount();
+    this.debugInfo.unitCount = this.entityManager.getEntityCount();
 
     // Draw calls estimation (Pixi v8 doesn't expose this directly)
-    // Estimate based on number of containers and graphics objects
-    this.debugInfo.drawCalls = this.viewport.children.length;
+    this.debugInfo.drawCalls = this.viewport.children.length + this.renderSystem.container.children.length;
+
+    // System performance profiling
+    this.debugInfo.systemTimes = {
+      render: renderTime
+    };
+
+    // Component inspector: Get entity component info
+    this.debugInfo.entities = [];
+    this.entityManager.getAllEntities().forEach((componentMap, entityId) => {
+      const components = Array.from(componentMap.keys());
+      this.debugInfo.entities.push({
+        id: entityId,
+        components: components
+      });
+    });
 
     this.debugOverlay.update(this.debugInfo);
 
@@ -268,11 +318,31 @@ export class HexEngine {
   exportState() {
     const state = this.stateManager.captureState({
       hexGrid: this.hexGrid,
-      viewport: this.viewport
+      viewport: this.viewport,
+      entityManager: this.entityManager
     });
 
     this.stateManager.exportState(state);
     console.log('State exported successfully');
+  }
+
+  /**
+   * Restore state from state object
+   * @param {Object} state - State object to restore
+   */
+  restoreState(state) {
+    const componentRegistry = {
+      PositionComponent,
+      RenderableComponent
+    };
+
+    this.stateManager.restoreState(state, {
+      entityManager: this.entityManager,
+      hexGrid: this.hexGrid,
+      viewport: this.viewport
+    }, componentRegistry);
+
+    console.log('State restored successfully');
   }
 
   /**

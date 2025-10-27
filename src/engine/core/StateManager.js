@@ -46,6 +46,8 @@ export class StateManager {
 
   /**
    * Load state from JSON
+   * @param {string} jsonString - JSON string to parse
+   * @returns {Object} Parsed and validated state
    */
   loadState(jsonString) {
     try {
@@ -67,6 +69,25 @@ export class StateManager {
       console.error('Failed to load state:', error);
       throw error;
     }
+  }
+
+  /**
+   * Restore state to engine components
+   * @param {Object} state - State object to restore
+   * @param {Object} components - Engine components to restore into
+   * @param {Object} componentRegistry - Map of component type names to constructors
+   */
+  restoreState(state, components, componentRegistry) {
+    // Restore entities
+    if (state.entities && components.entityManager && componentRegistry) {
+      components.entityManager.deserialize(state.entities, componentRegistry);
+      console.log(`Restored ${state.entities.length} entities`);
+    }
+
+    // TODO(phase3): Restore viewport position and scale
+    // TODO(phase4): Restore turn state and game logic state
+
+    return state;
   }
 
   /**

@@ -41,6 +41,12 @@ export class DebugOverlay {
     this.memoryText = new PIXI.Text({ text: '', style: this.textStyle });
     this.memoryText.position.set(10, 64);
 
+    this.systemsText = new PIXI.Text({ text: '', style: this.textStyle });
+    this.systemsText.position.set(10, 82);
+
+    this.entitiesText = new PIXI.Text({ text: '', style: { ...this.textStyle, fontSize: 10 } });
+    this.entitiesText.position.set(10, 100);
+
     this.hintText = new PIXI.Text({
       text: 'Press D for detailed mode',
       style: { ...this.textStyle, fontSize: 10, fill: 0x888888 }
@@ -52,6 +58,8 @@ export class DebugOverlay {
     this.container.addChild(this.stateText);
     this.container.addChild(this.performanceText);
     this.container.addChild(this.memoryText);
+    this.container.addChild(this.systemsText);
+    this.container.addChild(this.entitiesText);
     this.container.addChild(this.hintText);
 
     // Performance tracking
@@ -99,6 +107,25 @@ export class DebugOverlay {
     this.fpsText.text = `FPS: ${this.fps} | Frame: ${delta.toFixed(2)}ms`;
     this.stateText.text = `Units: ${debugInfo.unitCount || 0} | Hexes: ${debugInfo.visibleHexes || 0}/${debugInfo.totalHexes || 0}`;
     this.performanceText.text = `Draw Calls: ${debugInfo.drawCalls || 0} | Update: ${(debugInfo.updateTime || 0).toFixed(2)}ms`;
+
+    // System performance profiling
+    if (debugInfo.systemTimes) {
+      const renderTime = (debugInfo.systemTimes.render || 0).toFixed(2);
+      this.systemsText.text = `Systems: Render=${renderTime}ms`;
+    } else {
+      this.systemsText.text = 'Systems: N/A';
+    }
+
+    // Entity component inspector (show first 3 entities)
+    if (debugInfo.entities && debugInfo.entities.length > 0) {
+      const entityLines = debugInfo.entities.slice(0, 3).map(e => {
+        const comps = e.components.map(c => c.split('Component')[0]).join(',');
+        return `  E${e.id}: [${comps}]`;
+      });
+      this.entitiesText.text = `Entities:\n${entityLines.join('\n')}`;
+    } else {
+      this.entitiesText.text = 'Entities: None';
+    }
 
     // Memory usage (if available)
     if (performance.memory) {
@@ -157,6 +184,8 @@ export class DebugOverlay {
     this.stateText.visible = this.detailedMode;
     this.performanceText.visible = this.detailedMode;
     this.memoryText.visible = this.detailedMode;
+    this.systemsText.visible = this.detailedMode;
+    this.entitiesText.visible = this.detailedMode;
     this.hintText.visible = this.visible && !this.detailedMode;
   }
 

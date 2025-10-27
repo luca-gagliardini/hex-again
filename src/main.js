@@ -1,4 +1,5 @@
 import { HexEngine } from './engine/core/HexEngine.js';
+import { PositionComponent, RenderableComponent } from './engine/core/Components.js';
 
 /**
  * Main entry point for the Hex Game Engine
@@ -18,8 +19,8 @@ async function init() {
       width: window.innerWidth,
       height: window.innerHeight,
       hexSize: 30,
-      gridWidth: 25,
-      gridHeight: 25,
+      gridWidth: 15,
+      gridHeight: 10,
       backgroundColor: 0x1a1a1a
     });
 
@@ -33,6 +34,9 @@ async function init() {
 
     // Setup UI controls
     setupControls();
+
+    // Setup unit spawning
+    setupUnitSpawner(engine);
 
     console.log('Engine started successfully!');
     console.log('Controls: Mouse drag to pan, scroll to zoom');
@@ -59,15 +63,17 @@ function setupControls() {
           const jsonString = event.target.result;
           const state = engine.stateManager.loadState(jsonString);
 
+          // Restore state to engine
+          engine.restoreState(state);
+
           // Show in textarea
           const textarea = document.getElementById('state-json');
           if (textarea) {
             textarea.value = JSON.stringify(state, null, 2);
           }
 
-          console.log('State loaded successfully:', state);
-          console.log('Note: Full state restoration will be implemented in Phase 2');
-          addPerfResult(`State loaded: ${state.grid.hexes.length} hexes`, 'info');
+          console.log('State loaded and restored successfully:', state);
+          addPerfResult(`State loaded: ${state.entities.length} entities, ${state.grid.hexes.length} hexes`, 'info');
         } catch (error) {
           console.error('Failed to load state:', error);
           addPerfResult(`Error: ${error.message}`, 'fail');
@@ -193,7 +199,7 @@ window.captureState = function() {
   const textarea = document.getElementById('state-json');
   textarea.value = JSON.stringify(state, null, 2);
 
-  addPerfResult(`State captured: ${state.grid.hexes.length} hexes`, 'info');
+  addPerfResult(`State captured: ${state.entities.length} entities, ${state.grid.hexes.length} hexes`, 'info');
   console.log('State captured to viewer');
 };
 
@@ -208,8 +214,9 @@ window.loadStateFromTextarea = function() {
 
   try {
     const state = engine.stateManager.loadState(jsonString);
-    addPerfResult(`State validated: v${state.version}, checksum ${state.checksum}`, 'pass');
-    console.log('State loaded and validated:', state);
+    engine.restoreState(state);
+    addPerfResult(`State loaded: v${state.version}, ${state.entities.length} entities`, 'pass');
+    console.log('State loaded and restored:', state);
   } catch (error) {
     addPerfResult(`Invalid state: ${error.message}`, 'fail');
     console.error('Failed to load state:', error);
@@ -309,13 +316,69 @@ async function measureFPS(duration) {
 }
 
 /**
+ * Setup unit spawning system
+ */
+let pendingUnitSpawn = null; // {shape, color}
+
+function setupUnitSpawner(engine) {
+  // Set up hex click handler
+  engine.onHexClick = (hex) => {
+    if (pendingUnitSpawn) {
+      const { shape, color } = pendingUnitSpawn;
+
+      // Create entity with Position and Renderable components
+      const entityId = engine.entityManager.createEntity([
+        new PositionComponent(hex.q, hex.r),
+        new RenderableComponent(color, shape)
+      ]);
+
+      console.log(`Spawned ${shape} unit at (${hex.q}, ${hex.r}) - Entity ID: ${entityId}`);
+
+      // Clear pending spawn
+      pendingUnitSpawn = null;
+      updateSpawnerUI(false);
+    }
+  };
+}
+
+function updateSpawnerUI(active) {
+  const canvas = document.querySelector('canvas');
+  if (canvas) {
+    canvas.style.cursor = active ? 'crosshair' : 'grab';
+  }
+}
+
+// Global function for HTML buttons
+window.spawnUnit = function(shape, color) {
+  if (!engine) return;
+
+  pendingUnitSpawn = { shape, color };
+  updateSpawnerUI(true);
+
+  const shapeNames = { circle: 'circle', square: 'square', triangle: 'triangle' };
+  console.log(`Click a hex to place ${shapeNames[shape]} unit`);
+};
+
+window.clearAllUnits = function() {
+  if (!engine) return;
+
+  const count = engine.entityManager.getEntityCount();
+  engine.entityManager.clear();
+  pendingUnitSpawn = null;
+  updateSpawnerUI(false);
+
+  console.log(`Cleared ${count} units`);
+};
+
+/**
  * Add helper methods to engine for console access
  */
 function addConsoleHelpers(engine) {
   engine.getState = function() {
     return this.stateManager.captureState({
       hexGrid: this.hexGrid,
-      viewport: this.viewport
+      viewport: this.viewport,
+      entityManager: this.entityManager
     });
   };
 
@@ -341,14 +404,23 @@ function addConsoleHelpers(engine) {
     });
 
     console.log('');
+    console.log('Entities:');
+    console.log('  Total entities:', state.entities.length);
+    if (state.entities.length > 0) {
+      console.log('  Sample entities (first 3):');
+      state.entities.slice(0, 3).forEach(entity => {
+        const pos = entity.components.find(c => c.type === 'PositionComponent');
+        const render = entity.components.find(c => c.type === 'RenderableComponent');
+        if (pos && render) {
+          console.log(`    Entity ${entity.entityId}: ${render.data.shape} at (${pos.data.q}, ${pos.data.r})`);
+        }
+      });
+    }
+
+    console.log('');
     console.log('Viewport:');
     console.log('  Position:', `(${state.viewport.x.toFixed(2)}, ${state.viewport.y.toFixed(2)})`);
     console.log('  Scale:', state.viewport.scale.toFixed(2));
-    console.log('');
-    console.log('Sample hexes (first 5):');
-    state.grid.hexes.slice(0, 5).forEach(hex => {
-      console.log(`  (q:${hex.hex.q}, r:${hex.hex.r}) = ${hex.terrain}`);
-    });
     console.log('');
     console.log('Full state object:', state);
     return state;
