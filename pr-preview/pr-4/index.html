@@ -33,6 +33,38 @@
       z-index: 1000;
     }
 
+    /* Standalone Debug Toggle Button */
+    .standalone-debug-btn {
+      position: absolute;
+      top: 10px;
+      right: 70px;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(76, 175, 80, 0.3);
+      border-radius: 5px;
+      font-family: 'Courier New', monospace;
+      padding: 10px 15px;
+      font-size: 12px;
+      color: #888;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .standalone-debug-btn:hover {
+      background: rgba(76, 175, 80, 0.2);
+      border-color: rgba(76, 175, 80, 0.5);
+    }
+
+    .standalone-debug-btn.active {
+      background: rgba(76, 175, 80, 0.3);
+      border-color: #4CAF50;
+    }
+
+    .standalone-debug-btn.active #debug-btn-text {
+      color: #4CAF50;
+      font-weight: bold;
+    }
+
     /* Dev Panel */
     #dev-panel {
       position: absolute;
@@ -274,7 +306,7 @@
       text-align: right;
     }
   </style>
-  <script type="module" crossorigin src="/hex-again/pr-preview/pr-4/assets/index-BzcvuV_U.js"></script>
+  <script type="module" crossorigin src="/hex-again/pr-preview/pr-4/assets/index-B4LMxF4b.js"></script>
 </head>
 <body>
   <div id="game-container">
@@ -282,6 +314,11 @@
 
     <!-- Game Tooltip (follows cursor) -->
     <div id="game-tooltip"></div>
+
+    <!-- Standalone Debug Toggle Button -->
+    <button id="debug-toggle-btn" class="standalone-debug-btn" onclick="toggleDebug()" title="Toggle Debug Overlay (F1)">
+      <span id="debug-btn-text">Debug: OFF</span>
+    </button>
 
     <!-- Consolidated Dev Panel -->
     <div id="dev-panel" class="collapsed">
