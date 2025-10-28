@@ -5,6 +5,7 @@ import { DebugOverlay } from '../../debug/DebugOverlay.js';
 import { EntityManager } from './EntityManager.js';
 import { RenderSystem } from '../systems/RenderSystem.js';
 import { PositionComponent, RenderableComponent } from './Components.js';
+import { TooltipManager, DebugHexFormatter } from '../../ui/TooltipManager.js';
 
 /**
  * HexEngine - Main game engine class
@@ -33,6 +34,7 @@ export class HexEngine {
     this.debugOverlay = null;
     this.entityManager = new EntityManager();
     this.renderSystem = null; // Initialized after hexGrid
+    this.tooltipManager = new TooltipManager();
 
     // Performance tracking
     this.debugInfo = {
@@ -45,11 +47,17 @@ export class HexEngine {
 
     // Pan/zoom state
     this.isDragging = false;
+    this.hasDragged = false; // Track if user actually moved (not just mousedown)
     this.dragStart = { x: 0, y: 0 };
     this.viewportPos = { x: 0, y: 0 };
     this.scale = 1;
     this.minScale = 0.5;
     this.maxScale = 3;
+
+    // Hex inspector state (for debug mode)
+    this.inspectedHex = null; // { q, r } of currently inspected hex
+    this.mouseDownPos = { x: 0, y: 0 }; // Track for click vs drag detection
+    this.CLICK_THRESHOLD = 5; // Max pixels moved to count as click
   }
 
   /**
@@ -100,6 +108,11 @@ export class HexEngine {
       this.debugOverlay = new DebugOverlay(this.app);
       this.app.stage.addChild(this.debugOverlay.container);
 
+      // Initialize tooltip manager
+      this.tooltipManager.initialize();
+      // TODO(phase 3): Make formatter swappable based on game mode (debug vs gameplay)
+      this.tooltipManager.setFormatter(new DebugHexFormatter());
+
       // Update debug info
       this.debugInfo.totalHexes = this.hexGrid.getHexCount();
 
@@ -130,6 +143,12 @@ export class HexEngine {
     canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
 
+      // Close inspector on zoom
+      if (this.inspectedHex) {
+        this.inspectedHex = null;
+        this.tooltipManager.hide();
+      }
+
       const delta = -Math.sign(e.deltaY);
       const zoomFactor = 0.1;
       const newScale = Math.max(this.minScale, Math.min(this.maxScale, this.scale + delta * zoomFactor));
@@ -143,61 +162,101 @@ export class HexEngine {
     // Mouse drag to pan
     canvas.addEventListener('mousedown', (e) => {
       this.isDragging = true;
+      this.hasDragged = false; // Reset drag tracking
       this.dragStart.x = e.clientX - this.viewportPos.x;
       this.dragStart.y = e.clientY - this.viewportPos.y;
+      this.mouseDownPos.x = e.clientX;
+      this.mouseDownPos.y = e.clientY;
       canvas.style.cursor = 'grabbing';
     });
 
     canvas.addEventListener('mousemove', (e) => {
       if (this.isDragging) {
+        // Close inspector on first actual drag movement
+        if (!this.hasDragged && this.inspectedHex) {
+          this.inspectedHex = null;
+          this.tooltipManager.hide();
+        }
+
+        this.hasDragged = true; // Mark that user has dragged
         this.viewportPos.x = e.clientX - this.dragStart.x;
         this.viewportPos.y = e.clientY - this.dragStart.y;
         this.updateViewportTransform();
       }
+      // Note: Removed hover tooltip behavior - now using click-based inspector
     });
 
     canvas.addEventListener('mouseup', () => {
       this.isDragging = false;
+      this.hasDragged = false; // Reset drag tracking
       canvas.style.cursor = 'grab';
     });
 
     canvas.addEventListener('mouseleave', () => {
       this.isDragging = false;
+      this.hasDragged = false; // Reset drag tracking
       canvas.style.cursor = 'default';
     });
 
     canvas.style.cursor = 'grab';
 
-    // Hex click handler (for unit placement)
+    // Hex click handler (for inspector and unit placement)
     canvas.addEventListener('click', (e) => {
-      if (!this.isDragging && this.onHexClick) {
-        const rect = canvas.getBoundingClientRect();
-        const canvasX = e.clientX - rect.left;
-        const canvasY = e.clientY - rect.top;
+      // Calculate distance moved since mousedown
+      const distance = Math.sqrt(
+        Math.pow(e.clientX - this.mouseDownPos.x, 2) +
+        Math.pow(e.clientY - this.mouseDownPos.y, 2)
+      );
 
-        // Convert to world coordinates
-        const worldX = (canvasX - this.viewportPos.x) / this.scale;
-        const worldY = (canvasY - this.viewportPos.y) / this.scale;
+      // Only process as click if movement < threshold (not a drag)
+      if (distance > this.CLICK_THRESHOLD) return;
 
-        // Get hex at position
-        const hex = this.hexGrid.pixelToHex(worldX, worldY);
-        const hexData = this.hexGrid.getHex(hex.q, hex.r);
+      const rect = canvas.getBoundingClientRect();
+      const canvasX = e.clientX - rect.left;
+      const canvasY = e.clientY - rect.top;
 
-        if (hexData) {
-          this.onHexClick(hex);
-        }
+      // Convert to world coordinates
+      const worldX = (canvasX - this.viewportPos.x) / this.scale;
+      const worldY = (canvasY - this.viewportPos.y) / this.scale;
+
+      // Get hex at position
+      const hex = this.hexGrid.pixelToHex(worldX, worldY);
+      const hexData = this.hexGrid.getHex(hex.q, hex.r);
+
+      if (!hexData) return;
+
+      // Check if debug mode is active
+      if (this.debugOverlay && this.debugOverlay.visible) {
+        // DEBUG MODE: Toggle hex inspector
+        this.toggleHexInspector(hex, hexData);
+      } else if (this.onHexClick) {
+        // GAME MODE: Unit placement or other game logic
+        this.onHexClick(hex);
       }
     });
 
     // Touch support for mobile
     let lastTouchDistance = 0;
+    let touchStartPos = { x: 0, y: 0 };
 
     canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault(); // Prevent synthetic mouse events
+
       if (e.touches.length === 1) {
         this.isDragging = true;
+        this.hasDragged = false; // Reset drag tracking
         this.dragStart.x = e.touches[0].clientX - this.viewportPos.x;
         this.dragStart.y = e.touches[0].clientY - this.viewportPos.y;
+        // Track touch start position for tap detection
+        touchStartPos.x = e.touches[0].clientX;
+        touchStartPos.y = e.touches[0].clientY;
       } else if (e.touches.length === 2) {
+        // Close inspector when starting pinch zoom
+        if (this.inspectedHex) {
+          this.inspectedHex = null;
+          this.tooltipManager.hide();
+        }
+
         const dx = e.touches[0].clientX - e.touches[1].clientX;
         const dy = e.touches[0].clientY - e.touches[1].clientY;
         lastTouchDistance = Math.sqrt(dx * dx + dy * dy);
@@ -208,6 +267,13 @@ export class HexEngine {
       e.preventDefault();
 
       if (e.touches.length === 1 && this.isDragging) {
+        // Close inspector on first actual drag movement
+        if (!this.hasDragged && this.inspectedHex) {
+          this.inspectedHex = null;
+          this.tooltipManager.hide();
+        }
+
+        this.hasDragged = true; // Mark that user has dragged
         this.viewportPos.x = e.touches[0].clientX - this.dragStart.x;
         this.viewportPos.y = e.touches[0].clientY - this.dragStart.y;
         this.updateViewportTransform();
@@ -229,8 +295,46 @@ export class HexEngine {
       }
     });
 
-    canvas.addEventListener('touchend', () => {
+    canvas.addEventListener('touchend', (e) => {
+      e.preventDefault(); // Prevent synthetic mouse events
+
+      // Check if this was a tap (minimal movement) with single touch
+      if (e.changedTouches.length === 1 && lastTouchDistance === 0) {
+        const touch = e.changedTouches[0];
+        const distance = Math.sqrt(
+          Math.pow(touch.clientX - touchStartPos.x, 2) +
+          Math.pow(touch.clientY - touchStartPos.y, 2)
+        );
+
+        // If movement < threshold, treat as tap
+        if (distance <= this.CLICK_THRESHOLD) {
+          const rect = canvas.getBoundingClientRect();
+          const canvasX = touch.clientX - rect.left;
+          const canvasY = touch.clientY - rect.top;
+
+          // Convert to world coordinates
+          const worldX = (canvasX - this.viewportPos.x) / this.scale;
+          const worldY = (canvasY - this.viewportPos.y) / this.scale;
+
+          // Get hex at position
+          const hex = this.hexGrid.pixelToHex(worldX, worldY);
+          const hexData = this.hexGrid.getHex(hex.q, hex.r);
+
+          if (hexData) {
+            // Check if debug mode is active
+            if (this.debugOverlay && this.debugOverlay.visible) {
+              // DEBUG MODE: Toggle hex inspector
+              this.toggleHexInspector(hex, hexData);
+            } else if (this.onHexClick) {
+              // GAME MODE: Unit placement or other game logic
+              this.onHexClick(hex);
+            }
+          }
+        }
+      }
+
       this.isDragging = false;
+      this.hasDragged = false; // Reset drag tracking
       lastTouchDistance = 0;
     });
   }
@@ -241,6 +345,39 @@ export class HexEngine {
   updateViewportTransform() {
     this.viewport.position.set(this.viewportPos.x, this.viewportPos.y);
     this.viewport.scale.set(this.scale);
+  }
+
+  /**
+   * Toggle hex inspector (debug mode)
+   * Shows/hides inspector tooltip for clicked hex
+   * @param {Object} hex - Hex coordinates { q, r }
+   * @param {Object} hexData - Full hex data object
+   */
+  toggleHexInspector(hex, hexData) {
+    if (!hex || !hexData) return;
+
+    // Check if clicking same hex - toggle off
+    if (this.inspectedHex &&
+        this.inspectedHex.q === hex.q &&
+        this.inspectedHex.r === hex.r) {
+      // Close inspector
+      this.inspectedHex = null;
+      this.tooltipManager.hide();
+      return;
+    }
+
+    // Show/switch to new hex
+    this.inspectedHex = { q: hex.q, r: hex.r };
+
+    // Get hex center position in world coordinates
+    const pixelPos = this.hexGrid.hexToPixel(hex);
+
+    // Convert to screen coordinates
+    const screenX = pixelPos.x * this.scale + this.viewportPos.x;
+    const screenY = pixelPos.y * this.scale + this.viewportPos.y;
+
+    // Show pinned tooltip at hex center
+    this.tooltipManager.showPinned(hexData, screenX, screenY);
   }
 
   /**

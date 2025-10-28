@@ -7,6 +7,8 @@
  * PositionComponent - Hex grid position
  */
 export class PositionComponent {
+  static type = 'PositionComponent'; // Minification-safe type identifier
+
   constructor(q, r) {
     this.q = q;
     this.r = r;
@@ -25,6 +27,8 @@ export class PositionComponent {
  * RenderableComponent - Visual representation
  */
 export class RenderableComponent {
+  static type = 'RenderableComponent'; // Minification-safe type identifier
+
   constructor(color, shape = 'circle') {
     this.color = color;
     this.shape = shape; // 'circle', 'square', 'triangle'

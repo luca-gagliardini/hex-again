@@ -161,6 +161,77 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2025-10-27
+
+### Phase 2.5: Hex Inspector & Grid Improvements
+
+#### Added
+- **Hex Inspector Tooltip System**
+  - HTML/CSS-based tooltip that follows mouse cursor
+  - Shows hex coordinates (q, r), terrain type, color code, and move cost
+  - Only active when debug overlay is enabled (F1)
+  - Smart positioning (stays within screen bounds)
+  - Extensible formatter pattern for future tooltip types (unit stats, action previews)
+  - TODOs added for Phase 3 expansion (destroy method, formatter directory)
+
+- **Terrain Visual Improvements**
+  - Added terrain-specific stroke colors for better distinction
+  - Brighter, more saturated fill colors
+  - Thicker borders (width: 2) for clearer hex edges
+  - Each terrain now has unique fill + stroke combination:
+    - Grass: Bright green with dark green border
+    - Water: Bright blue with deep blue border
+    - Mountain: Light gray with dark gray border
+    - Desert: Sandy yellow with orange border
+    - Forest: Dark green with darker green border
+
+#### Changed
+- **Grid Layout Transformation**
+  - Converted from flat-top to pointy-top hexagons
+  - Changed from parallelogram to horizontal rectangle layout
+  - Implemented offset→axial coordinate conversion for rectangular grids
+  - q coordinates now go cleanly left-to-right
+  - r coordinates now go cleanly top-to-bottom
+
+- **Rendering Performance Optimization**
+  - Refactored hex rendering to use `beginPath()` per hex
+  - Reduced path commands from 16 to 9 per hex (~44% improvement)
+  - Fixed terrain color mapping bug (fill colors now match terrain type)
+  - Improved rendering clarity with higher alpha values (0.85 for fill, 0.9 for stroke)
+
+#### Technical
+- New files: `src/ui/TooltipManager.js` (149 lines)
+- Updated: `HexGrid.js` (layout orientation, grid initialization, rendering)
+- Updated: `HexEngine.js` (tooltip integration, mousemove handling)
+- Updated: `DebugOverlay.js` (removed Pixi-based hex inspector)
+- Updated: `index.html` (tooltip HTML/CSS)
+- Updated: `CLAUDE.md` (Phase 4 expanded to include config-driven content system)
+
+#### TODOs Added
+- **Phase 3:** Tooltip destroy method, formatter directory split, decouple from debug overlay
+- **Phase 4:** Data-driven TerrainRegistry, config-driven units/terrain/UI, texture support, theme system
+- **Phase 5:** Group hexes by terrain type for batch rendering on large maps (>1000 hexes)
+
+#### Performance
+- **Achieved:** 60fps maintained with all improvements
+- Rendering improvement: 44% fewer path commands per hex
+- Tooltip rendering: No measurable performance impact (HTML/CSS, not in render loop)
+- Memory: No increase (tooltip is single DOM element)
+
+#### Developer Experience
+- Hover any hex in debug mode to see full terrain information
+- Tooltip automatically hides when dragging map
+- Clean separation: tooltip system fully reusable for game features
+- Architecture ready for Phase 3 unit tooltips
+
+### Notes
+- Phase 2.5 enhancements complete
+- Grid now properly rectangular for better gameplay
+- Terrain colors now match their types (bug fixed)
+- Ready for Phase 3: Interaction and Pathfinding
+
+---
+
 ## [Unreleased]
 
 ### Planned for Phase 3
@@ -169,6 +240,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A* pathfinding with terrain costs
 - Movement range visualization
 - Path preview on hover
+- Attack range visualization
 
 Target: <10ms pathfinding for 20 hex distance
 

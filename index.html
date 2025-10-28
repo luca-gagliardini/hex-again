@@ -33,6 +33,38 @@
       z-index: 1000;
     }
 
+    /* Standalone Debug Toggle Button */
+    .standalone-debug-btn {
+      position: absolute;
+      top: 10px;
+      right: 70px;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(76, 175, 80, 0.3);
+      border-radius: 5px;
+      font-family: 'Courier New', monospace;
+      padding: 10px 15px;
+      font-size: 12px;
+      color: #888;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .standalone-debug-btn:hover {
+      background: rgba(76, 175, 80, 0.2);
+      border-color: rgba(76, 175, 80, 0.5);
+    }
+
+    .standalone-debug-btn.active {
+      background: rgba(76, 175, 80, 0.3);
+      border-color: #4CAF50;
+    }
+
+    .standalone-debug-btn.active #debug-btn-text {
+      color: #4CAF50;
+      font-weight: bold;
+    }
+
     /* Dev Panel */
     #dev-panel {
       position: absolute;
@@ -226,11 +258,66 @@
     #dev-panel.collapsed .toggle-icon {
       transform: rotate(180deg);
     }
+
+    /* Game Tooltip */
+    #game-tooltip {
+      position: fixed;
+      z-index: 10001; /* Above everything */
+      display: none;
+      pointer-events: none; /* Don't block mouse events */
+      background: rgba(0, 0, 0, 0.95);
+      border: 1px solid rgba(76, 175, 80, 0.5);
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      color: #00FF00;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+      max-width: 300px;
+    }
+
+    #game-tooltip .tooltip-section {
+      margin: 0;
+    }
+
+    #game-tooltip .tooltip-title {
+      font-size: 12px;
+      font-weight: bold;
+      color: #4CAF50;
+      margin-bottom: 6px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid rgba(76, 175, 80, 0.3);
+    }
+
+    #game-tooltip .tooltip-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 3px 0;
+      line-height: 1.4;
+    }
+
+    #game-tooltip .tooltip-label {
+      color: #888;
+      margin-right: 12px;
+    }
+
+    #game-tooltip .tooltip-value {
+      color: #00FF00;
+      text-align: right;
+    }
   </style>
 </head>
 <body>
   <div id="game-container">
     <div id="stats"></div>
+
+    <!-- Game Tooltip (follows cursor) -->
+    <div id="game-tooltip"></div>
+
+    <!-- Standalone Debug Toggle Button -->
+    <button id="debug-toggle-btn" class="standalone-debug-btn" onclick="toggleDebug()" title="Toggle Debug Overlay (F1)">
+      <span id="debug-btn-text">Debug: OFF</span>
+    </button>
 
     <!-- Consolidated Dev Panel -->
     <div id="dev-panel" class="collapsed">
@@ -240,13 +327,6 @@
       </div>
 
       <div class="panel-content">
-        <!-- Debug Controls -->
-        <div class="dev-section">
-          <h4>Debug Overlay</h4>
-          <button id="toggle-debug" onclick="toggleDebug()">Toggle (F1)</button>
-          <button id="toggle-detail" onclick="toggleDetail()">Detailed (D)</button>
-        </div>
-
         <!-- State Management -->
         <div class="dev-section">
           <h4>State Management</h4>
