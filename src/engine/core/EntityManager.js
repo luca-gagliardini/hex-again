@@ -18,7 +18,9 @@ export class EntityManager {
     const componentMap = new Map();
 
     components.forEach(component => {
-      componentMap.set(component.constructor.name, component);
+      // Use static type property instead of constructor.name (minification-safe)
+      const componentType = component.constructor.type || component.constructor.name;
+      componentMap.set(componentType, component);
     });
 
     this.entities.set(entityId, componentMap);
@@ -43,7 +45,9 @@ export class EntityManager {
     if (!entity) {
       throw new Error(`Entity ${entityId} does not exist`);
     }
-    entity.set(component.constructor.name, component);
+    // Use static type property instead of constructor.name (minification-safe)
+    const componentType = component.constructor.type || component.constructor.name;
+    entity.set(componentType, component);
   }
 
   /**

@@ -10,6 +10,7 @@ export class TooltipManager {
     this.element = null;
     this.formatter = null;
     this.visible = false;
+    this.pinned = false; // Whether tooltip is pinned to a location
     this.offset = { x: 15, y: 15 }; // Offset from cursor
     this.padding = 10; // Distance from screen edges
   }
@@ -51,6 +52,31 @@ export class TooltipManager {
     // Show tooltip
     this.element.style.display = 'block';
     this.visible = true;
+    this.pinned = false; // Regular show is not pinned
+  }
+
+  /**
+   * Show tooltip pinned at a specific screen position
+   * @param {Object} data - Data to display
+   * @param {number} x - Screen X position
+   * @param {number} y - Screen Y position
+   */
+  showPinned(data, x, y) {
+    if (!this.element || !this.formatter) return;
+
+    // Format content using current formatter
+    const html = this.formatter.format(data);
+    this.element.innerHTML = html;
+
+    // Mark as pinned
+    this.pinned = true;
+
+    // Update position
+    this.updatePosition(x, y);
+
+    // Show tooltip
+    this.element.style.display = 'block';
+    this.visible = true;
   }
 
   /**
@@ -61,6 +87,7 @@ export class TooltipManager {
 
     this.element.style.display = 'none';
     this.visible = false;
+    this.pinned = false; // Clear pinned state
   }
 
   /**

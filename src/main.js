@@ -153,6 +153,17 @@ window.toggleDevPanel = function() {
 window.toggleDebug = function() {
   if (engine) {
     engine.debugOverlay.toggle();
+
+    // Update standalone debug button state
+    const debugBtn = document.getElementById('debug-toggle-btn');
+    const debugBtnText = document.getElementById('debug-btn-text');
+    if (engine.debugOverlay.visible) {
+      debugBtn.classList.add('active');
+      debugBtnText.textContent = 'Debug: ON';
+    } else {
+      debugBtn.classList.remove('active');
+      debugBtnText.textContent = 'Debug: OFF';
+    }
   }
 };
 
