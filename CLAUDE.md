@@ -206,9 +206,9 @@ Developer Tools (Always Active)
 
 ---
 
-### Phase 4: Game Logic Systems
+### Phase 4: Game Logic and Content Systems
 
-**Objective**: Flexible turn management and combat systems
+**Objective**: Flexible gameplay systems with data-driven content configuration
 
 **Deliverables**:
 - Turn management with both sequential and simultaneous modes
@@ -216,6 +216,11 @@ Developer Tools (Always Active)
 - Basic combat resolution
 - Turn history with replay capability
 - Action validation system
+- **Data-driven content system**:
+  - Extract terrain config to TerrainRegistry
+  - Extract unit types to UnitRegistry
+  - Config-driven visual themes (colors, sprites, patterns)
+  - Support rapid design iteration without code changes
 
 **Performance Target**: <5ms per action resolution
 
