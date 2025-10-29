@@ -259,6 +259,55 @@
       transform: rotate(180deg);
     }
 
+    /* Theme Panel */
+    #theme-panel {
+      position: absolute;
+      top: 10px;
+      right: 420px;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(76, 175, 80, 0.3);
+      border-radius: 5px;
+      font-family: 'Courier New', monospace;
+      max-width: 400px;
+      transition: all 0.3s ease;
+    }
+
+    #theme-panel.collapsed {
+      width: 40px;
+      height: 40px;
+      overflow: hidden;
+    }
+
+    #theme-panel .panel-header {
+      padding: 10px;
+      background: rgba(76, 175, 80, 0.2);
+      border-bottom: 1px solid rgba(76, 175, 80, 0.3);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #theme-panel .panel-header h3 {
+      margin: 0;
+      font-size: 14px;
+      color: #4CAF50;
+    }
+
+    #theme-panel .panel-content {
+      padding: 10px;
+      display: none;
+    }
+
+    #theme-panel:not(.collapsed) .panel-content {
+      display: block;
+    }
+
+    #theme-panel.collapsed .toggle-icon {
+      transform: rotate(180deg);
+    }
+
     /* Game Tooltip */
     #game-tooltip {
       position: fixed;
@@ -306,7 +355,7 @@
       text-align: right;
     }
   </style>
-  <script type="module" crossorigin src="/hex-again/pr-preview/pr-5/assets/index-BEFGF3lV.js"></script>
+  <script type="module" crossorigin src="/hex-again/pr-preview/pr-5/assets/index-DrqC9oc5.js"></script>
 </head>
 <body>
   <div id="game-container">
@@ -379,56 +428,83 @@
           <button class="secondary" onclick="printPerf()">Print Perf (P)</button>
         </div>
 
-        <!-- Theme Editor -->
+        <div class="help-text">
+          F1: Debug • D: Detail • R: Reset • E: Export<br>
+          F2: Dev • F3: Theme • Drag: Pan • Scroll: Zoom
+        </div>
+      </div>
+    </div>
+
+    <!-- Theme Panel -->
+    <div id="theme-panel" class="collapsed">
+      <div class="panel-header" onclick="toggleThemePanel()">
+        <h3>THEME</h3>
+        <span class="toggle-icon">▼</span>
+      </div>
+
+      <div class="panel-content">
+        <!-- Palette Configuration -->
         <div class="dev-section">
-          <h4>Theme Editor</h4>
-
-          <!-- Palette -->
-          <div style="margin-bottom: 8px;">
-            <label style="color: #888; font-size: 10px; display: block; margin-bottom: 4px;">Background</label>
-            <input type="color" id="color-background" value="#1a1a1a" style="width: 60px; height: 24px; border: none; cursor: pointer;">
+          <h4>Palette</h4>
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <label style="color: #888; font-size: 11px; min-width: 100px;">Background:</label>
+            <input type="color" id="color-background" value="#1a1a1a">
           </div>
-
-          <!-- Hex Style -->
-          <div style="margin-bottom: 8px;">
-            <label style="color: #888; font-size: 10px; display: block; margin-bottom: 4px;">Stroke</label>
-            <input type="color" id="color-stroke" value="#1a1a1a" style="width: 60px; height: 24px; border: none; cursor: pointer; margin-right: 8px;">
-            <label style="color: #888; font-size: 10px;">Width:</label>
-            <input type="number" id="stroke-width" value="4" style="width: 50px; padding: 4px; background: #333; color: white; border: 1px solid #555; border-radius: 3px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <label style="color: #888; font-size: 11px; min-width: 100px;">Stroke:</label>
+            <input type="color" id="color-stroke" value="#1a1a1a">
           </div>
+        </div>
 
-          <!-- Terrain Colors -->
-          <div style="margin-bottom: 8px;">
-            <label style="color: #888; font-size: 10px; display: block; margin-bottom: 4px;">Terrain Colors</label>
-            <div style="display: grid; grid-template-columns: 70px 60px; gap: 4px; align-items: center;">
-              <span style="color: #888; font-size: 10px;">Grass:</span>
-              <input type="color" id="color-grass" value="#5b8930" style="width: 60px; height: 24px; border: none; cursor: pointer;">
+        <!-- Hex Style Configuration -->
+        <div class="dev-section">
+          <h4>Hex Style</h4>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <label style="color: #888; font-size: 11px; min-width: 100px;">Stroke Width:</label>
+            <input type="number" id="stroke-width" value="4" style="width: 60px; background: #000; color: #00FF00; border: 1px solid #4CAF50; padding: 4px; font-family: 'Courier New', monospace; font-size: 11px;">
+          </div>
+        </div>
 
-              <span style="color: #888; font-size: 10px;">Water:</span>
-              <input type="color" id="color-water" value="#261e47" style="width: 60px; height: 24px; border: none; cursor: pointer;">
-
-              <span style="color: #888; font-size: 10px;">Mountain:</span>
-              <input type="color" id="color-mountain" value="#8c9fa0" style="width: 60px; height: 24px; border: none; cursor: pointer;">
-
-              <span style="color: #888; font-size: 10px;">Desert:</span>
-              <input type="color" id="color-desert" value="#e8d3a2" style="width: 60px; height: 24px; border: none; cursor: pointer;">
-
-              <span style="color: #888; font-size: 10px;">Forest:</span>
-              <input type="color" id="color-forest" value="#006638" style="width: 60px; height: 24px; border: none; cursor: pointer;">
+        <!-- Terrain Colors -->
+        <div class="dev-section">
+          <h4>Terrain Colors</h4>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <label style="color: #888; font-size: 11px; min-width: 100px;">Grass:</label>
+              <input type="color" id="color-grass" value="#5B8930">
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <label style="color: #888; font-size: 11px; min-width: 100px;">Water:</label>
+              <input type="color" id="color-water" value="#261E47">
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <label style="color: #888; font-size: 11px; min-width: 100px;">Mountain:</label>
+              <input type="color" id="color-mountain" value="#8C9FA0">
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <label style="color: #888; font-size: 11px; min-width: 100px;">Desert:</label>
+              <input type="color" id="color-desert" value="#E8D3A2">
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <label style="color: #888; font-size: 11px; min-width: 100px;">Forest:</label>
+              <input type="color" id="color-forest" value="#006638">
             </div>
           </div>
+        </div>
 
-          <!-- Actions -->
-          <button onclick="applyTheme()" id="apply-theme">Apply</button>
-          <button class="secondary" onclick="resetTheme()" id="reset-theme">Reset</button>
-          <button class="secondary" onclick="exportTheme()" id="export-theme">Export</button>
+        <!-- Theme Actions -->
+        <div class="dev-section">
+          <h4>Actions</h4>
+          <button id="apply-theme" onclick="applyTheme()">Apply Theme</button>
+          <button class="secondary" id="reset-theme" onclick="resetTheme()">Reset</button>
+          <button class="secondary" id="export-theme" onclick="exportTheme()">Export</button>
           <label for="import-theme" class="file-label">Import</label>
           <input type="file" id="import-theme" accept=".json">
         </div>
 
         <div class="help-text">
-          F1: Debug • D: Detail • R: Reset • E: Export<br>
-          F2: Dev Panel • Drag: Pan • Scroll: Zoom
+          Configure visual theme and colors.<br>
+          Changes apply when you click "Apply Theme".
         </div>
       </div>
     </div>
