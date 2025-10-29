@@ -6,6 +6,8 @@ import { EntityManager } from './EntityManager.js';
 import { RenderSystem } from '../systems/RenderSystem.js';
 import { PositionComponent, RenderableComponent } from './Components.js';
 import { TooltipManager, DebugHexFormatter } from '../../ui/TooltipManager.js';
+import { ThemeManager } from '../../config/ThemeManager.js';
+import { DefaultTheme } from '../../config/ThemeDefaults.js';
 
 /**
  * HexEngine - Main game engine class
@@ -29,6 +31,7 @@ export class HexEngine {
     this.isRunning = false;
 
     // Core systems
+    this.themeManager = new ThemeManager(DefaultTheme);
     this.hexGrid = null;
     this.stateManager = new StateManager();
     this.debugOverlay = null;
@@ -90,12 +93,12 @@ export class HexEngine {
       this.viewportPos.y = this.config.height / 2;
       this.updateViewportTransform();
 
-      // Initialize hex grid
+      // Initialize hex grid (with ThemeManager dependency injection)
       this.hexGrid = new HexGrid({
         size: this.config.hexSize,
         width: this.config.gridWidth,
         height: this.config.gridHeight
-      });
+      }, this.themeManager);
 
       this.hexGrid.render();
       this.viewport.addChild(this.hexGrid.container);
@@ -480,6 +483,32 @@ export class HexEngine {
     }, componentRegistry);
 
     console.log('State restored successfully');
+  }
+
+  /**
+   * Update theme across all systems
+   * @param {Object} partialConfig - Partial theme configuration
+   */
+  updateTheme(partialConfig) {
+    // Update theme manager
+    this.themeManager.updateTheme(partialConfig);
+
+    // Update DOM background and Pixi canvas background if palette changed
+    if (partialConfig.palette?.background || partialConfig.palette?.backgroundHex) {
+      const newBackground = this.themeManager.getPalette().backgroundHex;
+      const newBackgroundNumber = this.themeManager.getPalette().background;
+
+      // Update body background
+      document.body.style.background = newBackground;
+
+      // Update Pixi renderer background (this was missing!)
+      if (this.app && this.app.renderer) {
+        this.app.renderer.background.color = newBackgroundNumber;
+      }
+    }
+
+    // Trigger hex grid re-render
+    this.hexGrid.updateTheme();
   }
 
   /**

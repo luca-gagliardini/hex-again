@@ -1,5 +1,6 @@
 import { HexEngine } from './engine/core/HexEngine.js';
 import { PositionComponent, RenderableComponent } from './engine/core/Components.js';
+import { applyThemeToDOM, DefaultTheme } from './config/ThemeDefaults.js';
 
 /**
  * Main entry point for the Hex Game Engine
@@ -10,6 +11,9 @@ let engine = null;
 async function init() {
   try {
     console.log('Initializing Hex Game Engine...');
+
+    // Apply theme to document body (must be done before engine creation)
+    applyThemeToDOM();
 
     // Get container
     const container = document.getElementById('game-container');
@@ -37,6 +41,12 @@ async function init() {
 
     // Setup unit spawning
     setupUnitSpawner(engine);
+
+    // Setup theme UI
+    setupThemeUI();
+
+    // Populate theme inputs with current theme
+    populateThemeInputs(DefaultTheme);
 
     console.log('Engine started successfully!');
     console.log('Controls: Mouse drag to pan, scroll to zoom');
@@ -101,6 +111,11 @@ function setupControls() {
         toggleDevPanel();
         break;
 
+      case 'F3':
+        e.preventDefault();
+        toggleThemePanel();
+        break;
+
       case 'd':
       case 'D':
         toggleDetail();
@@ -128,6 +143,7 @@ function setupControls() {
   console.log('=== Keyboard Shortcuts ===');
   console.log('  F1 - Toggle debug overlay');
   console.log('  F2 - Toggle dev panel');
+  console.log('  F3 - Toggle theme panel');
   console.log('   D - Toggle detailed debug mode');
   console.log('   R - Reset viewport');
   console.log('   E - Export state');
@@ -138,7 +154,7 @@ function setupControls() {
   console.log('  hexEngine.inspectState()  - Pretty print state');
   console.log('  hexEngine.exportState()   - Download state as JSON');
   console.log('');
-  console.log('Tip: Press F2 to open dev panel');
+  console.log('Tip: Press F2 for dev panel, F3 for theme editor');
 }
 
 // ============================================
@@ -147,6 +163,11 @@ function setupControls() {
 
 window.toggleDevPanel = function() {
   const panel = document.getElementById('dev-panel');
+  panel.classList.toggle('collapsed');
+};
+
+window.toggleThemePanel = function() {
+  const panel = document.getElementById('theme-panel');
   panel.classList.toggle('collapsed');
 };
 
@@ -380,6 +401,175 @@ window.clearAllUnits = function() {
 
   console.log(`Cleared ${count} units`);
 };
+
+// ============================================
+// Theme UI Functions
+// ============================================
+
+/**
+ * Setup theme editor UI handlers
+ */
+function setupThemeUI() {
+  // Wire up Apply button
+  const applyBtn = document.getElementById('apply-theme');
+  if (applyBtn) {
+    applyBtn.addEventListener('click', applyTheme);
+  }
+
+  // Wire up Reset button
+  const resetBtn = document.getElementById('reset-theme');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', resetTheme);
+  }
+
+  // Wire up Export button
+  const exportBtn = document.getElementById('export-theme');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', exportTheme);
+  }
+
+  // Wire up Import input
+  const importInput = document.getElementById('import-theme');
+  if (importInput) {
+    importInput.addEventListener('change', handleThemeImport);
+  }
+
+  console.log('✓ Theme UI initialized');
+}
+
+/**
+ * Apply theme changes from UI inputs
+ */
+window.applyTheme = function() {
+  if (!engine) return;
+
+  // Read values from UI inputs
+  const themeConfig = {
+    palette: {
+      background: hexToNumber(document.getElementById('color-background').value),
+      backgroundHex: document.getElementById('color-background').value,
+    },
+    hexStyle: {
+      strokeWidth: parseInt(document.getElementById('stroke-width').value) || 4,
+      strokeColor: hexToNumber(document.getElementById('color-stroke').value),
+    },
+    terrain: {
+      GRASS: {
+        color: hexToNumber(document.getElementById('color-grass').value),
+      },
+      WATER: {
+        color: hexToNumber(document.getElementById('color-water').value),
+      },
+      MOUNTAIN: {
+        color: hexToNumber(document.getElementById('color-mountain').value),
+      },
+      DESERT: {
+        color: hexToNumber(document.getElementById('color-desert').value),
+      },
+      FOREST: {
+        color: hexToNumber(document.getElementById('color-forest').value),
+      }
+    }
+  };
+
+  // Apply theme
+  engine.updateTheme(themeConfig);
+  console.log('Theme applied:', themeConfig);
+};
+
+/**
+ * Reset theme to defaults
+ */
+window.resetTheme = function() {
+  if (!engine) return;
+
+  // Reset using standard theme update flow
+  engine.themeManager.resetTheme(DefaultTheme);
+  engine.updateTheme(DefaultTheme);
+
+  // Update UI inputs to match defaults
+  populateThemeInputs(DefaultTheme);
+
+  console.log('Theme reset to defaults');
+};
+
+/**
+ * Export current theme as JSON file
+ */
+window.exportTheme = function() {
+  if (!engine) return;
+
+  const theme = engine.themeManager.exportTheme();
+  const jsonString = JSON.stringify(theme, null, 2);
+
+  // Create download
+  const blob = new Blob([jsonString], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `theme-${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  console.log('Theme exported');
+};
+
+/**
+ * Handle theme import from file
+ */
+function handleThemeImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    try {
+      const themeConfig = JSON.parse(event.target.result);
+
+      // Import and apply theme using standard update flow
+      engine.themeManager.importTheme(themeConfig);
+      engine.updateTheme(themeConfig);
+
+      // Update UI inputs to match imported theme
+      populateThemeInputs(themeConfig);
+      console.log('Theme imported:', themeConfig);
+    } catch (error) {
+      console.error('Failed to import theme:', error);
+    }
+  };
+  reader.readAsText(file);
+
+  // Clear input
+  e.target.value = '';
+}
+
+/**
+ * Populate theme UI inputs with values
+ */
+function populateThemeInputs(theme) {
+  document.getElementById('color-background').value = theme.palette.backgroundHex;
+  document.getElementById('color-stroke').value = numberToHex(theme.hexStyle.strokeColor);
+  document.getElementById('stroke-width').value = theme.hexStyle.strokeWidth;
+  document.getElementById('color-grass').value = numberToHex(theme.terrain.GRASS.color);
+  document.getElementById('color-water').value = numberToHex(theme.terrain.WATER.color);
+  document.getElementById('color-mountain').value = numberToHex(theme.terrain.MOUNTAIN.color);
+  document.getElementById('color-desert').value = numberToHex(theme.terrain.DESERT.color);
+  document.getElementById('color-forest').value = numberToHex(theme.terrain.FOREST.color);
+}
+
+/**
+ * Convert hex string (#RRGGBB) to number (0xRRGGBB)
+ */
+function hexToNumber(hexString) {
+  return parseInt(hexString.replace('#', ''), 16);
+}
+
+/**
+ * Convert number (0xRRGGBB) to hex string (#RRGGBB)
+ */
+function numberToHex(number) {
+  return '#' + number.toString(16).padStart(6, '0');
+}
 
 /**
  * Add helper methods to engine for console access

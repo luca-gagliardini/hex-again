@@ -3,10 +3,10 @@ import { Hex } from './Hex.js';
 
 /**
  * HexGrid manages the hexagonal grid layout and rendering
- * Uses flat-top hexagon orientation
+ * Uses pointy-top hexagon orientation for rectangular layout
  */
 export class HexGrid {
-  constructor(config = {}) {
+  constructor(config = {}, themeManager) {
     this.size = config.size || 30; // Hex radius in pixels
     this.width = config.width || 20; // Grid width in hexes
     this.height = config.height || 20; // Grid height in hexes
@@ -24,43 +24,15 @@ export class HexGrid {
       origin: { x: 0, y: 0 }
     };
 
-    // Terrain types with fill and stroke colors for better visual distinction
+    // Store ThemeManager reference (dependency injection)
+    this.themeManager = themeManager;
+
+    // Terrain types - from ThemeManager for dynamic theming
     // TODO(phase 4): Extract terrain config to data-driven TerrainRegistry system
     // TODO(phase 4): Make units, terrain, and UI config-driven for rapid design iteration
     // TODO(phase 4): Add pattern/texture/sprite support for terrain types
     // TODO(phase 4): Support multiple visual themes (units and terrain)
-    this.terrainTypes = {
-      GRASS: {
-        color: 0x5CB85C,      // Bright grass green
-        stroke: 0x2E7D32,     // Dark green border
-        name: 'grass',
-        cost: 1
-      },
-      WATER: {
-        color: 0x42A5F5,      // Bright blue
-        stroke: 0x1565C0,     // Deep blue border
-        name: 'water',
-        cost: 2
-      },
-      MOUNTAIN: {
-        color: 0xBDBDBD,      // Light gray
-        stroke: 0x424242,     // Dark gray border
-        name: 'mountain',
-        cost: 3
-      },
-      DESERT: {
-        color: 0xFFD54F,      // Sandy yellow
-        stroke: 0xF57C00,     // Orange border
-        name: 'desert',
-        cost: 1
-      },
-      FOREST: {
-        color: 0x2E7D32,      // Dark forest green
-        stroke: 0x1B5E20,     // Darker green border
-        name: 'forest',
-        cost: 2
-      }
-    };
+    this.terrainTypes = this.themeManager.getTerrain();
 
     // Store hex data
     this.hexes = new Map(); // key -> {hex, terrain, sprite}
@@ -151,6 +123,7 @@ export class HexGrid {
   /**
    * Render all hexes to the container
    * Performance: Uses Graphics for better batching
+   * Minimalist style: Background-colored strokes create "floating tiles" effect
    * TODO(phase 5): Group hexes by terrain type for batch rendering on large maps (>1000 hexes)
    */
   render() {
@@ -159,6 +132,9 @@ export class HexGrid {
 
     // Create single graphics object for all hexes (better performance)
     const graphics = new PIXI.Graphics();
+
+    // Get current hex style from theme manager
+    const hexStyle = this.themeManager.getHexStyle();
 
     this.hexes.forEach((data, key) => {
       const { hex, terrain } = data;
@@ -171,11 +147,43 @@ export class HexGrid {
         graphics.lineTo(corners[i].x, corners[i].y);
       }
       graphics.closePath();
-      graphics.fill({ color: terrain.color, alpha: 0.85 });
-      graphics.stroke({ width: 2, color: terrain.stroke, alpha: 0.9 });
+
+      // Use centralized theme for consistent styling
+      graphics.fill({ color: terrain.color, alpha: hexStyle.fillAlpha });
+      graphics.stroke({
+        width: hexStyle.strokeWidth,
+        color: hexStyle.strokeColor,  // Background color for minimalist effect
+        alpha: hexStyle.strokeAlpha
+      });
     });
 
     this.container.addChild(graphics);
+  }
+
+  /**
+   * Update theme and re-render grid
+   * Called when user changes theme via UI
+   */
+  updateTheme() {
+    // Refresh terrain types reference
+    this.terrainTypes = this.themeManager.getTerrain();
+
+    // CRITICAL: Update terrain references in existing hexes
+    // Each hex stores a reference to a terrain object, which needs to be updated
+    // when colors change
+    this.hexes.forEach((data, key) => {
+      const terrainName = data.terrain.name;
+      // Find matching terrain in updated terrainTypes
+      const terrainKey = Object.keys(this.terrainTypes).find(
+        key => this.terrainTypes[key].name === terrainName
+      );
+      if (terrainKey) {
+        data.terrain = this.terrainTypes[terrainKey];
+      }
+    });
+
+    // Re-render with new theme
+    this.render();
   }
 
   /**
