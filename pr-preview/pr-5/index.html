@@ -306,7 +306,7 @@
       text-align: right;
     }
   </style>
-  <script type="module" crossorigin src="/hex-again/pr-preview/pr-5/assets/index-CO7syX6T.js"></script>
+  <script type="module" crossorigin src="/hex-again/pr-preview/pr-5/assets/index-DmirsPGP.js"></script>
 </head>
 <body>
   <div id="game-container">
@@ -377,6 +377,53 @@
           <h4>Quick Actions</h4>
           <button onclick="resetViewport()">Reset View (R)</button>
           <button class="secondary" onclick="printPerf()">Print Perf (P)</button>
+        </div>
+
+        <!-- Theme Editor -->
+        <div class="dev-section">
+          <h4>Theme Editor</h4>
+
+          <!-- Palette -->
+          <div style="margin-bottom: 8px;">
+            <label style="color: #888; font-size: 10px; display: block; margin-bottom: 4px;">Background</label>
+            <input type="color" id="color-background" value="#1a1a1a" style="width: 60px; height: 24px; border: none; cursor: pointer;">
+          </div>
+
+          <!-- Hex Style -->
+          <div style="margin-bottom: 8px;">
+            <label style="color: #888; font-size: 10px; display: block; margin-bottom: 4px;">Stroke</label>
+            <input type="color" id="color-stroke" value="#1a1a1a" style="width: 60px; height: 24px; border: none; cursor: pointer; margin-right: 8px;">
+            <label style="color: #888; font-size: 10px;">Width:</label>
+            <input type="number" id="stroke-width" value="4" style="width: 50px; padding: 4px; background: #333; color: white; border: 1px solid #555; border-radius: 3px;">
+          </div>
+
+          <!-- Terrain Colors -->
+          <div style="margin-bottom: 8px;">
+            <label style="color: #888; font-size: 10px; display: block; margin-bottom: 4px;">Terrain Colors</label>
+            <div style="display: grid; grid-template-columns: 70px 60px; gap: 4px; align-items: center;">
+              <span style="color: #888; font-size: 10px;">Grass:</span>
+              <input type="color" id="color-grass" value="#5b8930" style="width: 60px; height: 24px; border: none; cursor: pointer;">
+
+              <span style="color: #888; font-size: 10px;">Water:</span>
+              <input type="color" id="color-water" value="#261e47" style="width: 60px; height: 24px; border: none; cursor: pointer;">
+
+              <span style="color: #888; font-size: 10px;">Mountain:</span>
+              <input type="color" id="color-mountain" value="#8c9fa0" style="width: 60px; height: 24px; border: none; cursor: pointer;">
+
+              <span style="color: #888; font-size: 10px;">Desert:</span>
+              <input type="color" id="color-desert" value="#e8d3a2" style="width: 60px; height: 24px; border: none; cursor: pointer;">
+
+              <span style="color: #888; font-size: 10px;">Forest:</span>
+              <input type="color" id="color-forest" value="#006638" style="width: 60px; height: 24px; border: none; cursor: pointer;">
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <button onclick="applyTheme()" id="apply-theme">Apply</button>
+          <button class="secondary" onclick="resetTheme()" id="reset-theme">Reset</button>
+          <button class="secondary" onclick="exportTheme()" id="export-theme">Export</button>
+          <label for="import-theme" class="file-label">Import</label>
+          <input type="file" id="import-theme" accept=".json">
         </div>
 
         <div class="help-text">
